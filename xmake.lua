@@ -12,7 +12,7 @@ set_project("USB2X")
 set_version("1.0.0")
 
 add_rules("mode.debug", "mode.release", "mode.releasedbg", "mode.minsizerel")
-add_rules("plugin.compile_commands.autoupdate", {outputdir = "."})
+add_rules("plugin.compile_commands.autoupdate", {outputdir = "build"})
 
 includes("xmake/toolchain.lua")
 includes("xmake/option.lua")

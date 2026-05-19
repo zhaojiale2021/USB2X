@@ -3,11 +3,21 @@
 
 local root = os.projectdir()
 
+-- Map xmake mode names to CMake directory casing
+local mode_dirs = {
+    debug      = "Debug",
+    release    = "Release",
+    minsizerel = "MinSizeRel",
+    releasedbg = "RelWithDebInfo"
+}
+local mode = get_config("mode") or "debug"
+local outdir = path.join(root, "build/bin", mode_dirs[mode] or mode)
+
 target("USB2X")
     set_kind("binary")
     set_toolchains("stm32-gcc")
     set_filename("USB2X.elf")
-    set_targetdir("build/bin/$(mode)")
+    set_targetdir(outdir)
 
     -- App sources
     add_files(path.join(root, "src/c/main.c"))
@@ -76,9 +86,14 @@ target("USB2X")
         add_cxflags("-Os", "-Wall", "-Wextra")
     end
 
-    -- Linker (force = true needed for CPU flags xmake would otherwise filter)
+    -- Linker writes map to build/ (guaranteed to exist); xmake places .elf in outdir
     add_ldflags("-mcpu=cortex-m0", "-mthumb", "-mfloat-abi=soft",
                 "--specs=nosys.specs", "-Wl,--gc-sections",
                 "-T" .. path.join(root, "src/startup/STM32F072XB_FLASH.ld"),
-                "-Wl,-Map=" .. path.join("$(builddir)", "USB2X.map"),
+                "-Wl,-Map=" .. path.join(root, "build", "USB2X.map"),
                 {force = true})
+
+    -- Copy .map to output directory (which exists after xmake places the .elf there)
+    after_build(function(target)
+        os.cp(path.join(root, "build", "USB2X.map"), target:targetdir())
+    end)
