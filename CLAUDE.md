@@ -20,7 +20,20 @@ Use `build.sh` (wraps CMake presets):
 
 CMake presets are defined in `CMakePresets.json`: `debug`, `release`, `minsize`, `reldebug`. All use Ninja generator and output to `build/`.
 
-The toolchain is `arm-none-eabi-gcc` (Cortex-M0) from STM32CubeIDE 1.15.0, set via `CMakePresets.json` → `CMAKE_TOOLCHAIN_FILE`. Outputs: `build/bin/<BuildType>/USB2X.elf` and `USB2X.map`.
+Alternatively, use `xmake`:
+
+```
+xmake f -m debug [--variant=CANABLE]   # configure
+xmake                                   # build
+xmake clean                             # remove build artifacts
+xmake f -m release --variant=OLLIE -y && xmake  # one-shot
+```
+
+xmake build modes mirror CMake presets: `debug`, `release`, `releasedbg`, `minsizerel`. Output: `build/bin/<mode>/USB2X.elf` + `USB2X.map`.
+
+The toolchain is `arm-none-eabi-gcc` (Cortex-M0) from STM32CubeIDE 1.15.0. CMake uses `toolchains/stm32_toolchain.cmake`; xmake uses the inline toolchain definition in `xmake.lua`. Both default to the CubeIDE path; override with `ARM_GCC_BIN` env var (xmake) or by editing the toolchain file (CMake).
+
+Outputs: `build/bin/<BuildType>/USB2X.elf` and `USB2X.map`.
 
 Build variants are selected via preprocessor defines passed at compile time. Supported variants: `CANABLE`, `ENTREE`, `CANTACT_8`, `CANTACT_16`, `OLLIE` — these define pin mappings and optional voltage regulator control in `include/pcan_varian.h`.
 

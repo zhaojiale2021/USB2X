@@ -6,11 +6,7 @@
     HAL_GPIO_Init(                                                                                                     \
         GPIO##_PORT,                                                                                                   \
         (GPIO_InitTypeDef[]){                                                                                          \
-            {.Pin       = GPIO_PIN_##_PIN,                                                                             \
-             .Mode      = GPIO_##_MODE,                                                                                \
-             .Pull      = GPIO_##_PULL,                                                                                \
-             .Speed     = GPIO_##_SPEED,                                                                               \
-             .Alternate = GPIO_##_AF}})
+            {.Pin = GPIO_PIN_##_PIN, .Mode = _MODE, .Pull = _PULL, .Speed = _SPEED, .Alternate = _AF}})
 #define _PIN_HI(_PORT, _PIN, ...)  GPIO##_PORT->BSRR = (1u << _PIN)
 #define _PIN_LOW(_PORT, _PIN, ...) GPIO##_PORT->BSRR = (0x10000u << _PIN)
 #define _PIN_TOGGLE(_PORT, _PIN, ...)                                                                                  \
