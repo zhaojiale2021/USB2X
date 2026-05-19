@@ -11,6 +11,12 @@ endif()
 
 project(${PROJECT_TARGET_BIN_NAME} LANGUAGES C CXX ASM)
 
+# Board variant selection (default: CANABLE)
+# Supported: CANABLE, ENTREE, CANTACT_8, CANTACT_16, OLLIE
+set(VARIANT "CANABLE" CACHE STRING "Target board variant")
+set_property(CACHE VARIANT PROPERTY STRINGS "CANABLE" "ENTREE" "CANTACT_8" "CANTACT_16" "OLLIE")
+include(${PROJECT_SOURCE_DIR}/presets/${VARIANT}.cmake)
+
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build/bin/${CMAKE_BUILD_TYPE})
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -100,7 +106,7 @@ target_compile_definitions(
     ${PROJECT_TARGET_BIN_NAME}
     PRIVATE
         STM32F072xB
-        CANABLE
+        ${BOARD_VARIANT}
         USE_HAL_DRIVER
 )
 
