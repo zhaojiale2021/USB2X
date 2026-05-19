@@ -80,7 +80,7 @@ set(USB_SRCS
 
 # Startup
 set(STARTUP_SRCS
-    src/c/startup_stm32f072xb.s
+    src/startup/startup_stm32f072xb.s
 )
 
 set(SRCS ${STARTUP_SRCS} ${APP_SRCS} ${USB_SRCS} ${HAL_SRCS})
@@ -94,7 +94,6 @@ target_include_directories(
     ${PROJECT_TARGET_BIN_NAME}
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include
-        ${PROJECT_SOURCE_DIR}/src/c
         ${PROJECT_SOURCE_DIR}/${_submod}/Middlewares/ST/STM32_USB_Device_Library/Core/Inc
         ${PROJECT_SOURCE_DIR}/${_submod}/Drivers/CMSIS/Core/Include
         ${PROJECT_SOURCE_DIR}/${_submod}/Drivers/CMSIS/Include
@@ -122,7 +121,7 @@ set_target_properties(${PROJECT_TARGET_BIN_NAME} PROPERTIES
 )
 
 target_link_options(${PROJECT_TARGET_BIN_NAME} PRIVATE
-    -T${PROJECT_SOURCE_DIR}/src/c/STM32F072XB_FLASH.ld
+    -T${PROJECT_SOURCE_DIR}/src/startup/STM32F072XB_FLASH.ld
     -Wl,-Map=${EXECUTABLE_OUTPUT_PATH}/${PROJECT_TARGET_BIN_NAME}.map
 )
 

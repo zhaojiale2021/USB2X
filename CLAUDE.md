@@ -22,7 +22,7 @@ CMake presets are defined in `CMakePresets.json`: `debug`, `release`, `minsize`,
 
 The toolchain is `arm-none-eabi-gcc` (Cortex-M0) from STM32CubeIDE 1.15.0, set via `CMakePresets.json` → `CMAKE_TOOLCHAIN_FILE`. Outputs: `build/bin/<BuildType>/USB2X.elf` and `USB2X.map`.
 
-Build variants are selected via preprocessor defines passed at compile time. Supported variants: `CANABLE`, `ENTREE`, `CANTACT_8`, `CANTACT_16`, `OLLIE` — these define pin mappings and optional voltage regulator control in `src/c/pcan_varian.h`.
+Build variants are selected via preprocessor defines passed at compile time. Supported variants: `CANABLE`, `ENTREE`, `CANTACT_8`, `CANTACT_16`, `OLLIE` — these define pin mappings and optional voltage regulator control in `include/pcan_varian.h`.
 
 Code formatting uses clang-format (Google style, 120 columns). The binary and pre-commit hook live in `tools/clang_format/`.
 
@@ -65,7 +65,7 @@ main() → init clocks/HAL/USB/CAN/LED/timestamp
 - `punker.h` — little-endian pack/unpack macros (u8 through u32, float)
 - `io_macro.h` — GPIO helper macros wrapping HAL calls
 
-The `toolchains/` directory contains alternative toolchain files (NuttX, Raspberry Pi, RH850) that are not part of the active build. Only `stm32_toolchain.cmake` is current.
+The `toolchains/` directory contains the STM32 Cortex-M0 toolchain configuration (`stm32_toolchain.cmake`).
 
 ## Tooling
 
