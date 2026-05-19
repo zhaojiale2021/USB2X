@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ninja)",
+      "Bash(rm -f /d/work/USB2X/build/CMakeCache.txt)",
+      "Bash(rm -rf /d/work/USB2X/build/CMakeFiles)",
+      "Bash(cmake -G \"Ninja\" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ..)",
+      "Bash(bash *)",
+      "WebFetch(domain:github.com)",
+      "Bash(git ls-remote *)",
+      "Bash(gh repo *)",
+      "Bash(git rm *)",
+      "Bash(cp -r /d/work/USB2X/Drivers /d/work/USB2X/lib/STM32CubeF0/)",
+      "Bash(cp -r /d/work/USB2X/Middlewares /d/work/USB2X/lib/STM32CubeF0/)",
+      "Bash(git config *)",
+      "Bash(nslookup github.com)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(git submodule *)",
+      "Bash(cmd.exe *)",
+      "Bash(taskkill /f /im clangd.exe)",
+      "Bash(taskkill //f //im clangd.exe)",
+      "Bash(powershell -Command \"Remove-Item -Path 'D:\\\\work\\\\USB2X\\\\lib\\\\STM32CubeF0' -Recurse -Force\")",
+      "Bash(taskkill //f //im \"Code.exe\")",
+      "Bash(echo \"rm exit: $?\")",
+      "Bash(rm -rf /d/work/USB2X/lib/STM32CubeF0)",
+      "Bash(echo \"locked-rm exit: $?\")"
+    ]
+  }
+}
