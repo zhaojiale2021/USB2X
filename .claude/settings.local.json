@@ -24,7 +24,9 @@
       "Bash(taskkill //f //im \"Code.exe\")",
       "Bash(echo \"rm exit: $?\")",
       "Bash(rm -rf /d/work/USB2X/lib/STM32CubeF0)",
-      "Bash(echo \"locked-rm exit: $?\")"
+      "Bash(echo \"locked-rm exit: $?\")",
+      "Bash(git commit *)",
+      "Bash(git add *)"
     ]
   }
 }
