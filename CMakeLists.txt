@@ -94,6 +94,7 @@ target_include_directories(
     ${PROJECT_TARGET_BIN_NAME}
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include
+    SYSTEM
         ${PROJECT_SOURCE_DIR}/${_submod}/Middlewares/ST/STM32_USB_Device_Library/Core/Inc
         ${PROJECT_SOURCE_DIR}/${_submod}/Drivers/CMSIS/Core/Include
         ${PROJECT_SOURCE_DIR}/${_submod}/Drivers/CMSIS/Include
@@ -127,11 +128,11 @@ target_link_options(${PROJECT_TARGET_BIN_NAME} PRIVATE
 
 # Build specific compile options
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -g -Wall -Wextra)
+    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -g -Wall -Wextra -Wno-unused-parameter)
 elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -g -Wall -Wextra -O2)
+    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -g -Wall -Wextra -O2 -Wno-unused-parameter)
 elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
-    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -Os -Wall -Wextra)
+    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -Os -Wall -Wextra -Wno-unused-parameter)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -O2 -Wall -Wextra)
+    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -O2 -Wall -Wextra -Wno-unused-parameter)
 endif()

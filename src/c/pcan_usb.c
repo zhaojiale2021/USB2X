@@ -388,7 +388,7 @@ int pcan_flush_data(struct t_m2h_fsm* pfsm, void* src, int size)
             return 0;
         }
         pfsm->state = 0;
-        /* fall through */
+        __attribute__((fallthrough));
     case 0:
         assert(p_data->ep_tx_in_use[pfsm->ep_addr & 0x0F] == 0);
         if (size > pfsm->dbsize)

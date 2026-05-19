@@ -59,13 +59,14 @@ target("USB2X")
     add_files(path.join(usb, "usbd_ctlreq.c"))
     add_files(path.join(usb, "usbd_ioreq.c"))
 
-    -- Include directories
+    -- Include directories (our headers)
     add_includedirs(path.join(root, "include"))
-    add_includedirs(path.join(root, "lib/STM32CubeF0/Middlewares/ST/STM32_USB_Device_Library/Core/Inc"))
-    add_includedirs(path.join(root, "lib/STM32CubeF0/Drivers/CMSIS/Core/Include"))
-    add_includedirs(path.join(root, "lib/STM32CubeF0/Drivers/CMSIS/Include"))
-    add_includedirs(path.join(root, "lib/STM32CubeF0/Drivers/CMSIS/Device/ST/STM32F0xx/Include"))
-    add_includedirs(path.join(root, "lib/STM32CubeF0/Drivers/STM32F0xx_HAL_Driver/Inc"))
+    -- System include directories (HAL / Middleware — suppress third-party warnings)
+    add_sysincludedirs(path.join(root, "lib/STM32CubeF0/Middlewares/ST/STM32_USB_Device_Library/Core/Inc"))
+    add_sysincludedirs(path.join(root, "lib/STM32CubeF0/Drivers/CMSIS/Core/Include"))
+    add_sysincludedirs(path.join(root, "lib/STM32CubeF0/Drivers/CMSIS/Include"))
+    add_sysincludedirs(path.join(root, "lib/STM32CubeF0/Drivers/CMSIS/Device/ST/STM32F0xx/Include"))
+    add_sysincludedirs(path.join(root, "lib/STM32CubeF0/Drivers/STM32F0xx_HAL_Driver/Inc"))
 
     -- Preprocessor defines
     add_defines("STM32F072xB", "USE_HAL_DRIVER")
@@ -77,13 +78,13 @@ target("USB2X")
 
     -- Build mode flags
     if is_mode("debug") then
-        add_cxflags("-g", "-Wall", "-Wextra")
+        add_cxflags("-g", "-Wall", "-Wextra", "-Wno-unused-parameter")
     elseif is_mode("release") then
-        add_cxflags("-O2", "-Wall", "-Wextra")
+        add_cxflags("-O2", "-Wall", "-Wextra", "-Wno-unused-parameter")
     elseif is_mode("releasedbg") then
-        add_cxflags("-O2", "-g", "-Wall", "-Wextra")
+        add_cxflags("-O2", "-g", "-Wall", "-Wextra", "-Wno-unused-parameter")
     elseif is_mode("minsizerel") then
-        add_cxflags("-Os", "-Wall", "-Wextra")
+        add_cxflags("-Os", "-Wall", "-Wextra", "-Wno-unused-parameter")
     end
 
     -- Linker writes map to build/ (guaranteed to exist); xmake places .elf in outdir
