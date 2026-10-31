@@ -90,6 +90,10 @@ if __name__ == "__main__":
                     os.path.join(root_dir, "./Middlewares"),
                     os.path.join(root_dir, "./toolchains"),
                     os.path.join(root_dir, "./tools"),
+                    # Files adapted from TinyUSB/ST; keep their upstream formatting.
+                    os.path.join(root_dir, "./examples/usb_eth_f7/src/stm32f7xx_hal_conf.h"),
+                    os.path.join(root_dir, "./examples/usb_eth_f7/src/tusb_config.h"),
+                    os.path.join(root_dir, "./examples/usb_eth_f7/src/usb_descriptors.c"),
                 ]
     absolute_exclude_paths = [os.path.abspath(exclude_path) for exclude_path in exclude_paths]
     # git_save_commit_id_to_file(git_commit_id_file)

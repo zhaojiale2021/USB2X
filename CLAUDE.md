@@ -35,7 +35,7 @@ The toolchain is `arm-none-eabi-gcc` (Cortex-M0). CMake uses `toolchains/stm32_t
 
 Outputs: `build/bin/<BuildType>/USB2X.elf` and `USB2X.map`.
 
-CI (`.github/workflows/build.yml`) builds CMake debug/release and xmake release on pushes and pull requests.
+CI (`.github/workflows/build.yml`) builds CMake debug/release, xmake release, and the F7 USB-Ethernet demo on pushes and pull requests.
 
 Build variants are selected via preprocessor defines passed at compile time. Supported variants: `CANABLE`, `ENTREE`, `CANTACT_8`, `CANTACT_16`, `OLLIE` — these define pin mappings and optional voltage regulator control in `include/pcan_variant.h`.
 
@@ -56,6 +56,17 @@ git submodule update --init --recursive
 ```
 
 The submodule URL uses HTTPS so CI can fetch it; developer machines rewrite GitHub HTTPS to SSH globally via `url.insteadof`.
+
+TinyUSB is a second submodule (`lib/tinyusb`), used only by the F7 demo. Its STM32F7 HAL/CMSIS device dependencies are fetched into the submodule with `python3 lib/tinyusb/tools/get_deps.py hw/mcu/st/cmsis_device_f7 hw/mcu/st/stm32f7xx_hal_driver` (untracked by USB2X). CMSIS Core headers are reused from `lib/STM32CubeF0/Drivers` via a CMake override.
+
+## USB-Ethernet demo (STM32F746G-DISCO)
+
+`examples/usb_eth_f7` is a separate application: a 100 Mbps USB-Ethernet bridge for the STM32F746G-DISCO.
+
+- USB: TinyUSB CDC-NCM with MS OS 2.0 descriptors (Windows auto-loads its NCM driver); Ethernet: STM32F7 HAL ETH in RMII mode + LAN8742A. No lwIP on the MCU.
+- Build: `python3 lib/tinyusb/tools/get_deps.py hw/mcu/st/cmsis_device_f7 hw/mcu/st/stm32f7xx_hal_driver`, then configure `examples/usb_eth_f7` with `-DBOARD=stm32f746disco` and build. See `examples/usb_eth_f7/README.md`.
+- Ethernet descriptors and buffers are placed in `.eth_dma` at `0x20040000` (SRAM1) by a custom linker script; the Cortex-M7 Ethernet DMA cannot access DTCM.
+- The F7 demo reuses CMSIS Core headers from `lib/STM32CubeF0/Drivers` through a CMake variable override.
 
 ## Architecture
 

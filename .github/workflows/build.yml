@@ -66,3 +66,29 @@ jobs:
 
       - name: Report size
         run: arm-none-eabi-size build/bin/Release/USB2X.elf
+
+  f7-demo:
+    name: F7 USB-Ethernet demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi
+
+      - name: Fetch TinyUSB STM32F7 dependencies
+        run: python3 lib/tinyusb/tools/get_deps.py hw/mcu/st/cmsis_device_f7 hw/mcu/st/stm32f7xx_hal_driver
+
+      - name: Build
+        run: |
+          cmake -S examples/usb_eth_f7 -B examples/usb_eth_f7/build -G Ninja \
+            -DBOARD=stm32f746disco -DCMAKE_BUILD_TYPE=Release
+          cmake --build examples/usb_eth_f7/build
+
+      - name: Report size
+        run: arm-none-eabi-size examples/usb_eth_f7/build/usb_eth_f7.elf

@@ -6,6 +6,7 @@
 
 # Generated at build time
 /git_commit_id.txt
+/examples/usb_eth_f7/build*/
 
 # Per-user tool settings
 /.claude/settings.local.json

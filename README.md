@@ -68,6 +68,13 @@ build systems resolve the toolchain from `ARM_GCC_BIN` (the bin directory contai
 | **Two build systems** | CMake presets and xmake modes with identical sources, flags and output paths |
 | **Bare-metal footprint** | Polled super-loop, no RTOS, no heap, ~19 KB flash in release |
 
+## 🌐 USB-Ethernet demo (STM32F746G-DISCO)
+
+This repository also contains a separate **100 Mbps USB-Ethernet demo**:
+TinyUSB CDC-NCM bridged to the on-board LAN8742A PHY, with no TCP/IP stack on
+the MCU. It targets the STM32F746G-DISCO (USB HS ULPI + RMII PHY) and does not
+use the PCAN firmware. See [examples/usb_eth_f7](examples/usb_eth_f7/).
+
 ## 🔌 Protocol support
 
 One interface, four bulk endpoints:
@@ -160,8 +167,10 @@ presets/                 Per-variant CMake fragments
 xmake/                   xmake toolchain, options and target
 toolchains/              arm-none-eabi CMake toolchain file
 lib/STM32CubeF0/         ST HAL + USB Device Library (git submodule)
+lib/tinyusb/             TinyUSB (git submodule, used by the F7 demo)
+examples/usb_eth_f7/     STM32F746G-DISCO USB-Ethernet demo (TinyUSB NCM)
 tools/clang_format/      Formatter binary and pre-commit hook
-.github/workflows/       CI: CMake (debug/release) and xmake (release) builds
+.github/workflows/       CI: F072 builds and the F7 USB-Ethernet demo
 ```
 
 ## ⚙️ Build matrix
@@ -203,7 +212,8 @@ Formatting uses clang-format (Google style, 120 columns); the binary lives at
 
 Issues and pull requests are welcome. Please make sure a `debug` build stays warning-free
 and format C sources with clang-format before opening a PR. CI builds the debug and release
-CMake presets plus the xmake release configuration. There is no automated test suite yet —
+CMake presets, the xmake release configuration, and the F7 USB-Ethernet demo. There is no
+automated test suite yet —
 hardware-in-the-loop testing on a real adapter is the reference.
 
 ## 📄 License

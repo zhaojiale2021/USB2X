@@ -67,6 +67,12 @@ Release 构建的实际大小（CANABLE）：text 19,272 B + data 276 B —— �
 | **两套构建系统** | CMake preset 与 xmake mode 使用相同的源码、编译选项和输出路径 |
 | **裸机体积** | 轮询超级循环，无 RTOS、无堆，Release 约 19 KB Flash |
 
+## 🌐 USB 转以太网 Demo（STM32F746G-DISCO）
+
+仓库里还包含一个独立的 **百兆 USB 转以太网 demo**：TinyUSB CDC-NCM 桥接到板载
+LAN8742A PHY，MCU 不运行 TCP/IP。目标板为 STM32F746G-DISCO（USB HS ULPI + RMII
+PHY），不使用 PCAN 固件。详见 [examples/usb_eth_f7](../../examples/usb_eth_f7/)。
+
 ## 🔌 协议支持
 
 一个接口，四个批量端点：
@@ -155,8 +161,10 @@ presets/                 各变体的 CMake 片段
 xmake/                   xmake 工具链、选项与目标
 toolchains/              arm-none-eabi CMake 工具链文件
 lib/STM32CubeF0/         ST HAL + USB Device Library（git 子模块）
+lib/tinyusb/             TinyUSB（git 子模块，F7 demo 使用）
+examples/usb_eth_f7/     STM32F746G-DISCO USB 转以太网 demo（TinyUSB NCM）
 tools/clang_format/      格式化工具与 pre-commit 钩子
-.github/workflows/       CI：CMake（debug/release）与 xmake（release）构建
+.github/workflows/       CI：F072 构建与 F7 USB 转以太网 demo
 ```
 
 ## ⚙️ 构建矩阵
@@ -197,8 +205,9 @@ xmake
 ## 🤝 贡献
 
 欢迎 issue 和 pull request。提交 PR 前请确保 `debug` 构建无警告，并用 clang-format
-格式化 C 源码。CI 会构建 debug/release 两个 CMake preset 以及 xmake release 配置。
-目前还没有自动化测试套件 —— 在真实适配器上的硬件在环测试是最终参考。
+格式化 C 源码。CI 会构建 debug/release 两个 CMake preset、xmake release 配置，以及
+F7 USB 转以太网 demo。目前还没有自动化测试套件 —— 在真实适配器上的硬件在环测试是
+最终参考。
 
 ## 📄 许可证
 
