@@ -8,6 +8,7 @@
 [![MCU](https://img.shields.io/badge/MCU-STM32F072%20%7C%20Cortex--M0-blue.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32f072xb.html)
 [![Protocol](https://img.shields.io/badge/protocol-PEAK%20PCAN--USB-informational.svg)](#-协议支持)
 [![Build](https://img.shields.io/badge/build-CMake%20%7C%20xmake-brightgreen.svg)](#-构建矩阵)
+[![CI](https://github.com/zhaojiale2021/USB2X/actions/workflows/build.yml/badge.svg)](https://github.com/zhaojiale2021/USB2X/actions/workflows/build.yml)
 
 [English](../../README.md) | [🌍 中文](./README.md)
 
@@ -19,7 +20,7 @@
 支持 PCAN-USB 线协议的 Host 软件可以通过 SJA1000 `BTR0`/`BTR1` 配置波特率、启停
 CAN 总线，并通过两个批量端点收发经典 CAN 2.0A/B 帧。整个适配器是运行在 Cortex-M0
 上的轮询超级循环 —— 没有 RTOS、没有堆、不依赖厂商 SDK，只使用 STM32 HAL 和 ST 的
-USB Device Library。Release 构建约占 25 KB Flash 和 8 KB RAM，对于 STM32F072xB 的
+USB Device Library。Release 构建约占 19 KB Flash 和 7.5 KB RAM，对于 STM32F072xB 的
 128 KB / 16 KB 资源仍有充足余量。
 
 > ⚠️ 设备使用 ST 的 VID/PID 枚举，而不是 PEAK 的。按 VID/PID 匹配的官方 PEAK 驱动
@@ -45,12 +46,12 @@ xmake f -m release --variant=CANABLE -y
 xmake                               # → build/bin/Release/USB2X.elf
 ```
 
-Release 构建的实际大小（CANABLE）：text 24,172 B + data 280 B —— 约 24 KB Flash、
-7.4 KB BSS。
+Release 构建的实际大小（CANABLE）：text 19,272 B + data 276 B —— 约 19 KB Flash、
+7.2 KB BSS。
 
 依赖：`arm-none-eabi-gcc`（Cortex-M0）、CMake ≥ 3.24 + Ninja，或 xmake。两套构建
-系统默认都指向 STM32CubeIDE 1.15.0 的工具链路径；xmake 可用 `ARM_GCC_BIN` 覆盖，
-CMake 请编辑 `toolchains/stm32_toolchain.cmake`。克隆时没加 `--recursive`？执行
+系统按 `ARM_GCC_BIN`（包含 `arm-none-eabi-gcc` 的 bin 目录）→ STM32CubeIDE 1.15.0
+默认路径 → `PATH` 的顺序查找工具链。克隆时没加 `--recursive`？执行
 `git submodule update --init --recursive`。
 
 ## 🌟 你能得到什么
@@ -64,7 +65,7 @@ CMake 请编辑 `toolchains/stm32_toolchain.cmake`。克隆时没加 `--recursiv
 | **由 Host 配置波特率** | `BTR0`/`BTR1` 按 PCAN 的 8 MHz 时序公式精确映射到 bxCAN；支持只听（silent）模式 |
 | **板型灵活** | 五种编译期变体；OLLIE 额外提供 5 V / 3.3 V / 1.8 V 电源轨的使能、LED 和检测引脚 |
 | **两套构建系统** | CMake preset 与 xmake mode 使用相同的源码、编译选项和输出路径 |
-| **裸机体积** | 轮询超级循环，无 RTOS、无堆，Release 约 25 KB Flash |
+| **裸机体积** | 轮询超级循环，无 RTOS、无堆，Release 约 19 KB Flash |
 
 ## 🔌 协议支持
 
@@ -111,7 +112,7 @@ SJA1000 模型是寄存器影子，而不是真实芯片的克隆：它让 PCAN 
 | `CANTACT_16` | CANtact 16 MHz 板 | 与 CANABLE 相同 |
 | `OLLIE` | 带可选电源轨的适配器 | CAN RX/TX `PB8`/`PB9`，电源轨使能 `PC13`–`PC15`，电源轨 LED `PA5`–`PA7`，电源轨检测 `PB4`–`PB6` |
 
-所有变体都实现 [`include/pcan_varian.h`](../../include/pcan_varian.h) 中相同的
+所有变体都实现 [`include/pcan_variant.h`](../../include/pcan_variant.h) 中相同的
 `pcan_variant_io_init()` 约定；新增一块板子只需要增加一个 preset 和一组引脚定义。
 在 OLLIE 上，当对应的电压检测输入为低时，固件会打开该电源轨并使能对应 LED。
 
@@ -141,7 +142,7 @@ USB 和 CAN 的“中断”都是通过超级循环直接调用 HAL 处理函数
 ```
 include/                 驱动、协议和板级头文件
   pcan_packet.h          PCAN/USB 命令常量与 SJA1000 寄存器映射
-  pcan_varian.h          按变体宏选择的板级引脚映射
+  pcan_variant.h          按变体宏选择的板级引脚映射
 src/c/                   应用源码
   main.c                 时钟配置与超级循环
   pcan_usb.c             USB 类：描述符、端点状态机、数据泵
@@ -155,6 +156,7 @@ xmake/                   xmake 工具链、选项与目标
 toolchains/              arm-none-eabi CMake 工具链文件
 lib/STM32CubeF0/         ST HAL + USB Device Library（git 子模块）
 tools/clang_format/      格式化工具与 pre-commit 钩子
+.github/workflows/       CI：CMake（debug/release）与 xmake（release）构建
 ```
 
 ## ⚙️ 构建矩阵
@@ -195,8 +197,8 @@ xmake
 ## 🤝 贡献
 
 欢迎 issue 和 pull request。提交 PR 前请确保 `debug` 构建无警告，并用 clang-format
-格式化 C 源码。目前还没有自动化测试套件 —— 在真实适配器上的硬件在环测试是最终
-参考。
+格式化 C 源码。CI 会构建 debug/release 两个 CMake preset 以及 xmake release 配置。
+目前还没有自动化测试套件 —— 在真实适配器上的硬件在环测试是最终参考。
 
 ## 📄 许可证
 

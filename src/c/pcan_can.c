@@ -3,13 +3,13 @@
 #include <assert.h>
 #include "pcan_can.h"
 #include "pcan_timestamp.h"
-#include "pcan_varian.h"
+#include "pcan_variant.h"
 
 #define CAN_TX_FIFO_SIZE (100)
 static CAN_HandleTypeDef g_hcan = {.Instance = CAN};
 #define INTERNAL_CAN_IT_FLAGS                                                                                          \
     (CAN_IT_TX_MAILBOX_EMPTY | CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_RX_FIFO1_MSG_PENDING | CAN_IT_BUSOFF               \
-     | CAN_IT_ERROR_WARNING | CAN_IT_ERROR_PASSIVE | CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE | CAN_IT_ERROR)
+     | CAN_IT_ERROR_WARNING | CAN_IT_ERROR_PASSIVE | CAN_IT_LAST_ERROR_CODE | CAN_IT_ERROR)
 
 static struct
 {
@@ -147,7 +147,7 @@ static int pcan_try_send_message(const can_message_t* p_msg)
         msg.IDE   = CAN_ID_STD;
     }
 
-    msg.DLC = p_msg->dlc;
+    msg.DLC = p_msg->dlc > 8 ? 8 : p_msg->dlc;
     msg.RTR = (p_msg->flags & CAN_FLAG_RTR) ? CAN_RTR_REMOTE : CAN_RTR_DATA;
 
     if (HAL_CAN_AddTxMessage(&g_hcan, &msg, (void*)p_msg->data, &txMailbox) != HAL_OK)
@@ -340,7 +340,7 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef* hcan)
 
     if (can_dev.can_err_cb && can_err)
     {
-        can_dev.can_err_cb(can_err, can_dev.tx_errs & 0xFF, can_dev.rx_errs);
+        can_dev.can_err_cb(can_err, can_dev.rx_errs & 0xFF, can_dev.tx_errs & 0xFF);
     }
 
     HAL_CAN_ResetError(hcan);

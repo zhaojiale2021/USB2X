@@ -2,7 +2,7 @@
 #include "stm32f0xx_hal.h"
 #include "pcan_timestamp.h"
 #include "pcan_led.h"
-#include "pcan_varian.h"
+#include "pcan_variant.h"
 
 static struct
 {

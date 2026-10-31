@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 #include "pcan_can.h"
@@ -7,6 +6,8 @@
 #include "pcan_led.h"
 #include "pcan_timestamp.h"
 #include "punker.h"
+
+_Static_assert(sizeof(PCAN_USB_PARAM) == 16, "PCAN command packets must match the 16-byte CMD endpoints");
 
 #define SJA1000_BASICCAN 0
 #define SJA1000_PELICAN  1
@@ -28,7 +29,7 @@ static struct
         /* config */
         uint8_t  btr0;
         uint8_t  btr1;
-        uint8_t  silient;
+        uint8_t  silent;
         uint8_t  loopback;
         uint8_t  err_mask;
         uint32_t quartz_freq;
@@ -70,7 +71,7 @@ static struct t_m2h_fsm data_fsm                               = {
 
 static PCAN_RECORD_BUFFER_EX pcan_records;
 
-void pcan_sja1000_write(uint8_t reg_addr, uint8_t value)
+static void pcan_sja1000_write(uint8_t reg_addr, uint8_t value)
 {
     if (pcan_device.sja1000_ic_mode == SJA1000_PELICAN)
     {
@@ -130,7 +131,7 @@ void pcan_sja1000_write(uint8_t reg_addr, uint8_t value)
     }
 }
 
-uint8_t pcan_sja1000_read(uint8_t reg_addr)
+static uint8_t pcan_sja1000_read(uint8_t reg_addr)
 {
     if (pcan_device.sja1000_ic_mode == SJA1000_PELICAN)
     {
@@ -182,13 +183,13 @@ uint8_t pcan_sja1000_read(uint8_t reg_addr)
     return 0;
 }
 
-void pcan_record_write_header(uint8_t* p)
+static void pcan_record_write_header(uint8_t* p)
 {
     p[0] = 0x02; /* record header */
     p[1] = 0x00; /* record count */
 }
 
-void pcan_record_buffer_reset(PCAN_RECORD_BUFFER_EX* prec)
+static void pcan_record_buffer_reset(PCAN_RECORD_BUFFER_EX* prec)
 {
     pcan_record_write_header(prec->buffer);
     prec->ts_counter = 0;
@@ -196,7 +197,7 @@ void pcan_record_buffer_reset(PCAN_RECORD_BUFFER_EX* prec)
 }
 
 /* request free slot for specific amount of data */
-uint8_t* pcan_record_buffer_request(PCAN_RECORD_BUFFER_EX* prec, uint16_t size)
+static uint8_t* pcan_record_buffer_request(PCAN_RECORD_BUFFER_EX* prec, uint16_t size)
 {
     if (size > (BLOCK_SIZE - HEADER_SIZE))
         return 0;
@@ -222,7 +223,7 @@ uint8_t* pcan_record_buffer_request(PCAN_RECORD_BUFFER_EX* prec, uint16_t size)
     return &prec->buffer[prec->pos];
 }
 
-void pcan_record_buffer_commit(PCAN_RECORD_BUFFER_EX* prec, uint16_t size)
+static void pcan_record_buffer_commit(PCAN_RECORD_BUFFER_EX* prec, uint16_t size)
 {
     uint16_t pos = prec->pos & (~(BLOCK_SIZE - 1));
     /* increse record count */
@@ -230,7 +231,7 @@ void pcan_record_buffer_commit(PCAN_RECORD_BUFFER_EX* prec, uint16_t size)
     prec->pos += size;
 }
 
-uint16_t pcan_record_buffer_flush(PCAN_RECORD_BUFFER_EX* prec)
+static uint16_t pcan_record_buffer_flush(PCAN_RECORD_BUFFER_EX* prec)
 {
     uint16_t ts_ticks = pcan_timestamp_ticks();
     int      res, flush_size;
@@ -261,58 +262,13 @@ uint16_t pcan_record_buffer_flush(PCAN_RECORD_BUFFER_EX* prec)
     return 0;
 }
 
-#if 0
-static void pcan_bus_event( PCAN_RECORD_BUFFER_EX *prec, uint8_t flags )
-{
-  uint8_t *ptr, sl, pos = 0;
-
-  ptr = pcan_record_buffer_request( prec, 6 );
-  if( !ptr )
-    return;
-
-  /* sl */
-  sl = PCAN_USB_STATUSLEN_INTERNAL | 0x03;
-  pack_u8( ptr, sl );
-  ptr += 1;
-  pos += 1;
-
-  /* function */
-  pack_u8( ptr, PCAN_USB_REC_BUSEVT );
-  ptr += 1;
-  pos += 1;
-
-  /* number 0x80, 0x00 */
-  pack_u8( ptr, flags );
-  ptr += 1;
-  pos += 1;
-
-  /* ecc */
-  pack_u8( ptr, pcan_device.can.ecc );
-  ptr += 1;
-  pos += 1;
-
-  /* rx error counter */
-  pack_u8( ptr, pcan_device.can.rx_err );
-  ptr += 1;
-  pos += 1;
-
-  /* tx error counter */
-  pack_u8( ptr, pcan_device.can.tx_err );
-  ptr += 1;
-  pos += 1;  
-
-  /* add new record */
-  pcan_record_buffer_commit( prec, pos );  
-}
-#endif
-
 #define BUFFER_MINIMAL_GAP_SIZE (16u)
 static void pcan_rx_can_frame(PCAN_RECORD_BUFFER_EX* prec, const can_message_t* msg)
 {
     uint8_t *ptr, pos = 0;
 
     ptr = pcan_record_buffer_request(prec, BUFFER_MINIMAL_GAP_SIZE);
-    /* wow ! too fast too furious !!! */
+    /* no slot available: flush the current buffer and retry */
     if (!ptr)
     {
         if (!pcan_record_buffer_flush(prec))
@@ -510,7 +466,7 @@ static uint8_t pcan_decode_data_frame(uint8_t* ptr, uint16_t size, uint8_t flags
         /* USB will get NACK and we will not miss other data */
         pcan_can_poll();
         uint16_t ts_diff = pcan_timestamp_ticks() - ts_poll;
-        /* we can't tramsit couse bus off or timeout ? */
+        /* give up when the bus is off or after a 1 s timeout */
         if ((pcan_device.can.err & PCAN_USB_ERROR_BUS_OFF) || (ts_diff >= PCAN_TICKS_FROM_US(1000000u)))
         {
             /* tx buffer overflow, drop all data */
@@ -545,14 +501,11 @@ static void pcan_set_bitrate(uint8_t* ptr)
     volatile uint16_t brp = (ptr[1] & 0x3f) + 1;
     volatile uint8_t  sjw = ((ptr[1] >> 6) & 0x3) + 1;
 
-    uint32_t bitrate = (((PCAN_USB_CRYSTAL_HZ / 2) / brp) / (1 /*tq*/ + tseg1 + tseg2));
-    (void)bitrate;
-
     pcan_can_set_bitrate(brp, tseg1, tseg2, sjw);
 }
 
 /* create */
-void pcan_timesync_event(PCAN_RECORD_BUFFER_EX* prec)
+static void pcan_timesync_event(PCAN_RECORD_BUFFER_EX* prec)
 {
     uint8_t  sl = PCAN_USB_STATUSLEN_INTERNAL | 2 /* record data size */;
     uint8_t *ptr, pos = 0;
@@ -632,10 +585,10 @@ void pcan_protocol_process_command(uint8_t* ptr, uint16_t size)
     case PCAN_USB_EX3:
         switch (cmd->function)
         {
-        /*  CAN silient control*/
+        /* CAN silent control */
         case PCAN_USB_SET_SILENT_MODE:
-            pcan_device.can.silient = cmd->param[0];
-            pcan_can_set_silent(pcan_device.can.silient);
+            pcan_device.can.silent = cmd->param[0];
+            pcan_can_set_silent(pcan_device.can.silent);
             break;
         }
         break;
@@ -698,7 +651,7 @@ void pcan_protocol_process_command(uint8_t* ptr, uint16_t size)
             cmd->param[0] = pcan_device.can.btr1;
             pcan_usb_send_command_buffer(cmd, sizeof(PCAN_USB_PARAM));
             break;
-        /* quarts freq in Mhz */
+        /* quartz frequency in MHz */
         case PCAN_USB_CMD_CLOCK:
         {
             cmd->param[0] = pcan_device.can.quartz_freq / 1000000u;
@@ -737,7 +690,7 @@ void pcan_protocol_process_command(uint8_t* ptr, uint16_t size)
         }
         break;
     default:
-        assert(0);
+        /* ignore unknown commands instead of asserting on host-controlled input */
         break;
     }
 }
@@ -759,7 +712,8 @@ void pcan_protocol_process_data(uint8_t* ptr, uint16_t size)
 
     for (uint8_t i = 0; i < msg_rec_count; i++)
     {
-        uint16_t eated = 0, sl;
+        uint16_t remaining = 0;
+        uint16_t sl;
 
         if (size < 1)
             return;
@@ -767,31 +721,24 @@ void pcan_protocol_process_data(uint8_t* ptr, uint16_t size)
         sl = unpack_u8(ptr);
         ptr += sizeof(uint8_t);
         size -= sizeof(uint8_t);
-        ;
 
-        /* status, error frame */
+        /* status, error frame - this device only accepts CAN data frames */
         if (sl & PCAN_USB_STATUSLEN_INTERNAL)
-        {
-            /* ??? abnormal, device support only CAN data frame */
-            eated = 0;
-        }
+            return;
+
         /* regular CAN data frame */
-        else
-        {
-            eated = pcan_decode_data_frame(ptr, size, sl);
-        }
+        remaining = pcan_decode_data_frame(ptr, size, sl);
 
-        /* ? error indicator */
-        if (!eated)
+        if (!remaining)
             return;
 
-        eated = size - eated;
+        uint16_t consumed = size - remaining;
 
-        if (size < eated)
+        if (size < consumed)
             return;
 
-        ptr += eated;
-        size -= eated;
+        ptr += consumed;
+        size -= consumed;
     }
 }
 

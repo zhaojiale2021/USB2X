@@ -1,8 +1,11 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+
+PRESETS="debug release minsize reldebug"
+VARIANTS="CANABLE ENTREE CANTACT_8 CANTACT_16 OLLIE"
 
 usage() {
     echo "Usage: ./build.sh [preset|clean] [command] [variant]"
@@ -33,8 +36,20 @@ usage() {
     echo "  ./build.sh clean                # remove build/"
 }
 
+in_list() {
+    case " $1 " in
+        *" $2 "*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    usage
+    exit 0
+fi
+
 # Allow "clean" as the first argument
-if [ "$1" = "clean" ]; then
+if [[ "${1:-}" == "clean" && $# -eq 1 ]]; then
     rm -rf "$SCRIPT_DIR/build"
     echo "build/ removed"
     exit 0
@@ -42,20 +57,43 @@ fi
 
 PRESET="${1:-debug}"
 CMD="${2:-all}"
-VARIANT="${3}"
+VARIANT="${3:-}"
 
-CMAKE_CONFIG_ARGS=""
-if [ -n "$VARIANT" ]; then
-    CMAKE_CONFIG_ARGS="-DVARIANT=$VARIANT"
+if ! in_list "$PRESETS" "$PRESET"; then
+    echo "Unknown preset: $PRESET" >&2
+    usage
+    exit 1
+fi
+
+if ! in_list "all config build clean" "$CMD"; then
+    echo "Unknown command: $CMD" >&2
+    usage
+    exit 1
+fi
+
+if [[ -n "$VARIANT" ]]; then
+    if ! in_list "$VARIANTS" "$VARIANT"; then
+        echo "Unknown variant: $VARIANT" >&2
+        usage
+        exit 1
+    fi
+    if [[ "$CMD" != "all" && "$CMD" != "config" ]]; then
+        echo "warning: variant '$VARIANT' is only applied when configuring (command: $CMD)" >&2
+    fi
+fi
+
+CMAKE_ARGS=(--preset "$PRESET" -S "$SCRIPT_DIR")
+if [[ -n "$VARIANT" ]]; then
+    CMAKE_ARGS+=("-DVARIANT=$VARIANT")
 fi
 
 case "$CMD" in
     all)
-        cmake --preset "$PRESET" -S "$SCRIPT_DIR" $CMAKE_CONFIG_ARGS
+        cmake "${CMAKE_ARGS[@]}"
         cmake --build --preset "$PRESET"
         ;;
     config)
-        cmake --preset "$PRESET" -S "$SCRIPT_DIR" $CMAKE_CONFIG_ARGS
+        cmake "${CMAKE_ARGS[@]}"
         ;;
     build)
         cmake --build --preset "$PRESET"
@@ -63,9 +101,5 @@ case "$CMD" in
     clean)
         rm -rf "$SCRIPT_DIR/build"
         echo "build/ removed"
-        ;;
-    *)
-        usage
-        exit 1
         ;;
 esac

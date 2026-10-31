@@ -31,20 +31,22 @@ xmake f -m release --variant=OLLIE -y && xmake  # one-shot
 
 xmake build modes mirror CMake presets: `debug`, `release`, `releasedbg`, `minsizerel`. Output: `build/bin/<mode>/USB2X.elf` + `USB2X.map`.
 
-The toolchain is `arm-none-eabi-gcc` (Cortex-M0) from STM32CubeIDE 1.15.0. CMake uses `toolchains/stm32_toolchain.cmake`; xmake uses the inline toolchain definition in `xmake.lua`. Both default to the CubeIDE path; override with `ARM_GCC_BIN` env var (xmake) or by editing the toolchain file (CMake).
+The toolchain is `arm-none-eabi-gcc` (Cortex-M0). CMake uses `toolchains/stm32_toolchain.cmake`; xmake uses `xmake/toolchain.lua`. Both resolve the toolchain from the `ARM_GCC_BIN` environment variable, then the STM32CubeIDE 1.15.0 path, then `arm-none-eabi-gcc` on `PATH` (used by CI).
 
 Outputs: `build/bin/<BuildType>/USB2X.elf` and `USB2X.map`.
 
-Build variants are selected via preprocessor defines passed at compile time. Supported variants: `CANABLE`, `ENTREE`, `CANTACT_8`, `CANTACT_16`, `OLLIE` — these define pin mappings and optional voltage regulator control in `include/pcan_varian.h`.
+CI (`.github/workflows/build.yml`) builds CMake debug/release and xmake release on pushes and pull requests.
+
+Build variants are selected via preprocessor defines passed at compile time. Supported variants: `CANABLE`, `ENTREE`, `CANTACT_8`, `CANTACT_16`, `OLLIE` — these define pin mappings and optional voltage regulator control in `include/pcan_variant.h`.
 
 Code formatting uses clang-format (Google style, 120 columns). The binary and pre-commit hook live in `tools/clang_format/`.
 
-## ## Dependencies
+## Dependencies
 
 STM32 official code (CMSIS, HAL Driver, USB Device Library) is managed as a git submodule:
 
 ```
-git submodule add git@github.com:STMicroelectronics/STM32CubeF0.git lib/STM32CubeF0
+git submodule add https://github.com/STMicroelectronics/STM32CubeF0.git lib/STM32CubeF0
 ```
 
 After cloning this repo, initialize with:
@@ -53,7 +55,7 @@ After cloning this repo, initialize with:
 git submodule update --init --recursive
 ```
 
-GitHub access uses SSH (HTTPS→SSH rewrite configured globally via `url.insteadof`).
+The submodule URL uses HTTPS so CI can fetch it; developer machines rewrite GitHub HTTPS to SSH globally via `url.insteadof`.
 
 ## Architecture
 
@@ -73,9 +75,9 @@ main() → init clocks/HAL/USB/CAN/LED/timestamp
 **Supporting modules**:
 - `pcan_timestamp.c` — TIM3-based 42.666 µs tick counter plus SysTick milliseconds for CAN frame timestamps
 - `pcan_led.c` — TX/RX/STAT LED patterns (on, off, fast blink 50 ms, slow blink 200 ms)
-- `pcan_varian.h` — board-specific pin definitions selected by compile-time variant macro
+- `pcan_variant.h` — board-specific pin definitions selected by compile-time variant macro
 - `pcan_packet.h` — protocol constants: command IDs, SJA1000 register map, error flags
-- `punker.h` — little-endian pack/unpack macros (u8 through u32, float)
+- `punker.h` — little-endian pack/unpack macros (u8 through u32)
 - `io_macro.h` — GPIO helper macros wrapping HAL calls
 
 The `toolchains/` directory contains the STM32 Cortex-M0 toolchain configuration (`stm32_toolchain.cmake`).

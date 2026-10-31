@@ -9,7 +9,7 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(CMAKE_TOOLCHAIN_FILE "${CMAKE_MODULE_PATH}/stm32_toolchain.cmake")
 endif()
 
-project(${PROJECT_TARGET_BIN_NAME} LANGUAGES C CXX ASM)
+project(${PROJECT_TARGET_BIN_NAME} LANGUAGES C ASM)
 
 # Board variant selection (default: CANABLE)
 # Supported: CANABLE, ENTREE, CANTACT_8, CANTACT_16, OLLIE
@@ -17,7 +17,7 @@ set(VARIANT "CANABLE" CACHE STRING "Target board variant")
 set_property(CACHE VARIANT PROPERTY STRINGS "CANABLE" "ENTREE" "CANTACT_8" "CANTACT_16" "OLLIE")
 include(${PROJECT_SOURCE_DIR}/presets/${VARIANT}.cmake)
 
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build/bin/${CMAKE_BUILD_TYPE})
+set(OUTPUT_DIR "${PROJECT_SOURCE_DIR}/build/bin/${CMAKE_BUILD_TYPE}")
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting build type to 'Release' as none was specified.")
@@ -28,6 +28,10 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 message(STATUS "Current build type is ${CMAKE_BUILD_TYPE}")
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON)
 
 ###############################################################################
 # Sources
@@ -92,9 +96,13 @@ add_executable(${PROJECT_TARGET_BIN_NAME} ${SRCS})
 
 target_include_directories(
     ${PROJECT_TARGET_BIN_NAME}
-    PUBLIC
+    PRIVATE
         ${PROJECT_SOURCE_DIR}/include
-    SYSTEM
+)
+
+target_include_directories(
+    ${PROJECT_TARGET_BIN_NAME}
+    SYSTEM PRIVATE
         ${PROJECT_SOURCE_DIR}/${_submod}/Middlewares/ST/STM32_USB_Device_Library/Core/Inc
         ${PROJECT_SOURCE_DIR}/${_submod}/Drivers/CMSIS/Core/Include
         ${PROJECT_SOURCE_DIR}/${_submod}/Drivers/CMSIS/Include
@@ -110,29 +118,41 @@ target_compile_definitions(
         USE_HAL_DRIVER
 )
 
-# Common CPU flags for Cortex-M0
-set(CPU_FLAGS "-mcpu=cortex-m0 -mthumb -mfloat-abi=soft")
-set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${CPU_FLAGS}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CPU_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPU_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CPU_FLAGS} --specs=nosys.specs -Wl,--gc-sections")
+# Cortex-M0 CPU flags, applied to both C and assembly sources
+set(CPU_FLAGS -mcpu=cortex-m0 -mthumb -mfloat-abi=soft)
+
+target_compile_options(
+    ${PROJECT_TARGET_BIN_NAME}
+    PRIVATE
+        ${CPU_FLAGS}
+        -ffunction-sections
+        -fdata-sections
+)
+
+# Build specific compile options (application sources only)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -g -Wall -Wextra)
+elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -g -O2 -Wall -Wextra)
+elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -Os -Wall -Wextra)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -O2 -Wall -Wextra)
+endif()
+
+# Third-party HAL/Middleware sources: suppress warnings we do not own
+set_source_files_properties(${HAL_SRCS} ${USB_SRCS} PROPERTIES COMPILE_OPTIONS "-w")
 
 set_target_properties(${PROJECT_TARGET_BIN_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}"
     SUFFIX ".elf"
 )
 
 target_link_options(${PROJECT_TARGET_BIN_NAME} PRIVATE
+    ${CPU_FLAGS}
+    --specs=nosys.specs
+    -Wl,--gc-sections
+    -Wl,--no-warn-rwx-segments
     -T${PROJECT_SOURCE_DIR}/src/startup/STM32F072XB_FLASH.ld
-    -Wl,-Map=${EXECUTABLE_OUTPUT_PATH}/${PROJECT_TARGET_BIN_NAME}.map
+    -Wl,-Map=${OUTPUT_DIR}/${PROJECT_TARGET_BIN_NAME}.map
 )
-
-# Build specific compile options
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -g -Wall -Wextra -Wno-unused-parameter)
-elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -g -Wall -Wextra -O2 -Wno-unused-parameter)
-elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
-    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -Os -Wall -Wextra -Wno-unused-parameter)
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_compile_options(${PROJECT_TARGET_BIN_NAME} PRIVATE -O2 -Wall -Wextra -Wno-unused-parameter)
-endif()

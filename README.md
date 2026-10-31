@@ -8,6 +8,7 @@ STM32F072 USB-to-CAN adapter firmware that speaks the PEAK PCAN-USB protocol.
 [![MCU](https://img.shields.io/badge/MCU-STM32F072%20%7C%20Cortex--M0-blue.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32f072xb.html)
 [![Protocol](https://img.shields.io/badge/protocol-PEAK%20PCAN--USB-informational.svg)](#-protocol-support)
 [![Build](https://img.shields.io/badge/build-CMake%20%7C%20xmake-brightgreen.svg)](#-build-matrix)
+[![CI](https://github.com/zhaojiale2021/USB2X/actions/workflows/build.yml/badge.svg)](https://github.com/zhaojiale2021/USB2X/actions/workflows/build.yml)
 
 [English](./README.md) | [🌍 中文](./docs/zh-CN/README.md)
 
@@ -20,7 +21,7 @@ PID `0x000C`). Host software that speaks the PCAN-USB wire protocol can configur
 bitrate from SJA1000 `BTR0`/`BTR1` values, start and stop the bus, and exchange classic
 CAN 2.0A/B frames over two bulk endpoints. The whole adapter is a polled super-loop on a
 Cortex-M0 — no RTOS, no heap, no vendor SDK: just the STM32 HAL and ST's USB Device
-Library. A release build is roughly 25 KB of flash and 8 KB of RAM, leaving plenty of the
+Library. A release build is roughly 19 KB of flash and 7.5 KB of RAM, leaving plenty of the
 128 KB / 16 KB on an STM32F072xB.
 
 > ⚠️ The adapter enumerates with ST's VID/PID, not PEAK's. Stock PEAK drivers that match
@@ -46,13 +47,13 @@ xmake f -m release --variant=CANABLE -y
 xmake                               # → build/bin/Release/USB2X.elf
 ```
 
-Expected release size (CANABLE): 24,172 B text + 280 B data — about 24 KB of flash and
-7.4 KB of BSS.
+Expected release size (CANABLE): 19,272 B text + 276 B data — about 19 KB of flash and
+7.2 KB of BSS.
 
 Requirements: `arm-none-eabi-gcc` (Cortex-M0). CMake ≥ 3.24 with Ninja, or xmake. Both
-build systems default to the STM32CubeIDE 1.15.0 toolchain path; override with
-`ARM_GCC_BIN` for xmake, or edit `toolchains/stm32_toolchain.cmake` for CMake. Cloned
-without `--recursive`? Run `git submodule update --init --recursive`.
+build systems resolve the toolchain from `ARM_GCC_BIN` (the bin directory containing
+`arm-none-eabi-gcc`), then the STM32CubeIDE 1.15.0 path, then `PATH`. Cloned without
+`--recursive`? Run `git submodule update --init --recursive`.
 
 ## 🌟 What you get
 
@@ -65,7 +66,7 @@ without `--recursive`? Run `git submodule update --init --recursive`.
 | **Bitrate from the host** | `BTR0`/`BTR1` mapped so the PCAN 8 MHz timing equation is reproduced exactly on bxCAN; listen-only (silent) mode supported |
 | **Board flexibility** | Five compile-time variants; OLLIE adds 5 V / 3.3 V / 1.8 V rails with enable, LED and sense pins |
 | **Two build systems** | CMake presets and xmake modes with identical sources, flags and output paths |
-| **Bare-metal footprint** | Polled super-loop, no RTOS, no heap, ~25 KB flash in release |
+| **Bare-metal footprint** | Polled super-loop, no RTOS, no heap, ~19 KB flash in release |
 
 ## 🔌 Protocol support
 
@@ -115,7 +116,7 @@ Selected at compile time with `-DVARIANT=<name>` (CMake) or `--variant=<name>` (
 | `OLLIE` | Adapter with selectable supply rails | CAN RX/TX `PB8`/`PB9`, rail enables `PC13`–`PC15`, rail LEDs `PA5`–`PA7`, rail sense `PB4`–`PB6` |
 
 Every variant implements the same `pcan_variant_io_init()` contract in
-[`include/pcan_varian.h`](include/pcan_varian.h); adding a board means adding a preset and
+[`include/pcan_variant.h`](include/pcan_variant.h); adding a board means adding a preset and
 a pin block. On OLLIE each rail is enabled and its LED lit when the matching
 voltage-sense input reads low.
 
@@ -146,7 +147,7 @@ only SysTick runs as a real interrupt, feeding `HAL_GetTick()`.
 ```
 include/                 Driver, protocol and board headers
   pcan_packet.h          PCAN/USB command constants and SJA1000 register map
-  pcan_varian.h          Per-board pin maps, selected by variant macro
+  pcan_variant.h          Per-board pin maps, selected by variant macro
 src/c/                   Application sources
   main.c                 Clock setup and super-loop
   pcan_usb.c             USB class: descriptors, endpoint FSM, data pump
@@ -160,6 +161,7 @@ xmake/                   xmake toolchain, options and target
 toolchains/              arm-none-eabi CMake toolchain file
 lib/STM32CubeF0/         ST HAL + USB Device Library (git submodule)
 tools/clang_format/      Formatter binary and pre-commit hook
+.github/workflows/       CI: CMake (debug/release) and xmake (release) builds
 ```
 
 ## ⚙️ Build matrix
@@ -200,8 +202,9 @@ Formatting uses clang-format (Google style, 120 columns); the binary lives at
 ## 🤝 Contributing
 
 Issues and pull requests are welcome. Please make sure a `debug` build stays warning-free
-and format C sources with clang-format before opening a PR. There is no automated test
-suite yet — hardware-in-the-loop testing on a real adapter is the reference.
+and format C sources with clang-format before opening a PR. CI builds the debug and release
+CMake presets plus the xmake release configuration. There is no automated test suite yet —
+hardware-in-the-loop testing on a real adapter is the reference.
 
 ## 📄 License
 

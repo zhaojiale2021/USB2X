@@ -102,19 +102,12 @@ static uint8_t device_init(USBD_HandleTypeDef* pdev, uint8_t cfgidx)
 
     UNUSED(cfgidx);
 
+    if (pdev->dev_speed != USBD_SPEED_FULL && pdev->dev_speed != USBD_SPEED_HIGH)
+        return USBD_FAIL;
+
     for (int i = 0; i < pcan_usb_dev.if0.bNumEndpoints; i++)
     {
         uint8_t ep_addr = p_ep[i].bEndpointAddress;
-
-        if (p_ep[i].bmAttributes == USB_ENDPOINT_TYPE_BULK)
-        {
-            if (pdev->dev_speed == USBD_SPEED_FULL)
-                ;
-            else if (pdev->dev_speed == USBD_SPEED_HIGH)
-                ;
-            else
-                assert(0);
-        }
 
         USBD_LL_OpenEP(pdev, ep_addr, p_ep[i].bmAttributes, p_ep[i].wMaxPacketSize);
 
@@ -225,34 +218,8 @@ static uint8_t device_data_in(USBD_HandleTypeDef* pdev, uint8_t epnum)
     if (pdev->pClassData == 0)
         return USBD_FAIL;
 
-/* use ZLP */
-#if 0
-  PCD_HandleTypeDef *hpcd = pdev->pData;
-  uint32_t len = pdev->ep_in[epnum].total_length;
-  /* packet is multiple of maxpacket, so tell host what all transfer is done */
-  if( len && ( len % hpcd->IN_ep[epnum].maxpacket ) == 0 )
-  {
-    /* update the packet total length */
-    pdev->ep_in[epnum].total_length = 0;
-    /* send ZLP */
-    if( !p_data->ep_tx_data_pending[epnum] )
-    {
-      USBD_LL_Transmit( pdev, epnum, NULL, 0 );
-    }
-    else
-    {
-      p_data->ep_tx_in_use[epnum] = 0;
-    }
-  }
-  else
-  {
-    /* tx done, no active transfer */
-    p_data->ep_tx_in_use[epnum] = 0;
-  }
-#else
     pdev->ep_in[epnum].total_length = 0U;
     p_data->ep_tx_in_use[epnum]     = 0;
-#endif
     return USBD_OK;
 }
 

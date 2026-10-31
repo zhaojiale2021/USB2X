@@ -2,7 +2,7 @@
 #include "pcan_protocol.h"
 #include "pcan_timestamp.h"
 #include "pcan_usb.h"
-#include "pcan_varian.h"
+#include "pcan_variant.h"
 #include "stm32f0xx_hal.h"
 
 void HAL_MspInit(void)

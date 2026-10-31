@@ -1,0 +1,11 @@
+# Normalize text files to LF in the repository
+* text=auto eol=lf
+
+# Windows-only files keep CRLF
+*.bat text eol=crlf
+
+# Binary artifacts
+*.exe binary
+*.bin binary
+*.hex binary
+*.elf binary

@@ -1,6 +1,15 @@
-build/
-.cache/
-.xmake/
-compile_commands.json
-Drivers/
-Middlewares/
+# Build outputs
+/build/
+/.cache/
+/.xmake/
+/compile_commands.json
+
+# Generated at build time
+/git_commit_id.txt
+
+# Per-user tool settings
+/.claude/settings.local.json
+
+# OS metadata
+.DS_Store
+Thumbs.db
